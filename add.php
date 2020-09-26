@@ -26,9 +26,14 @@ if (isset($form['submit'])) {
     }
 
     // Запишем все id проектов из БД в массив
-    foreach ($projects as $project) {
-        $projId[] = $project['proj_id'];
+    $projects ='';
+    $projId=[];
+    if ($projects) {
+        foreach ($projects as $project) {
+            $projId[] = $project['proj_id'];
+        }
     }
+
 
     // Проверим id проекта от пользователя с данными в БД
     if (!in_array(isset($form['project']), $projId)) {
@@ -54,10 +59,10 @@ if (isset($form['submit'])) {
      */
 
     // Присваиваем значения переменным
-    $fileName   = trim($_FILES['file']['name']);
-    $fileSize   = $_FILES['file']['size'];
-    $fileTmp    = $_FILES['file']['tmp_name'];
-    $fileErr    = $_FILES['file']['error'];
+    $fileName = trim($_FILES['file']['name']);
+    $fileSize = $_FILES['file']['size'];
+    $fileTmp = $_FILES['file']['tmp_name'];
+    $fileErr = $_FILES['file']['error'];
 
     // Определим допустимые типы файлов
     $fileTypes = array('png', 'xlsx', 'xls', 'doc', 'docx', 'pdf', 'jpg', 'csv', 'txt');
@@ -69,7 +74,9 @@ if (isset($form['submit'])) {
     $linkFile = '';
 
     // Формируем имя файла
-    $newFileName = time() . '_' . $user_id;
+    if (isset($user_id)) {
+        $newFileName = time() . '_' . $user_id;
+    }
 
     // Формируем имя файла, проверка на допустимое расширение
     if (isset($_FILES['file']) && $fileSize > 0) {
@@ -78,7 +85,7 @@ if (isset($form['submit'])) {
         $tmp = explode('.', $fileName);
 
         // Получим расширение загруженного файла от пользователя
-        $file_extension  = strtolower(end($tmp));
+        $file_extension = strtolower(end($tmp));
 
         // Проверим файл на допустимые типы расширений
         if (($fileSize > 0) && in_array($file_extension, $fileTypes)) {
@@ -128,15 +135,17 @@ if (!empty($form) && empty($errors)) {
 
     // Данные для запроса
     $data = [
-        'proj_id'       => $form['project'],
-        'user_id'       => $user_id,
-        'title_task'    => $form['name'],
-        'link_file'     => (isset($_FILES['file'])) ? $linkFile : NULL,
+        'proj_id' => $form['project'],
+        'user_id' => $user_id,
+        'title_task' => $form['name'],
+        'link_file' => (isset($_FILES['file'])) ? $linkFile : NULL,
         'date_task_end' => (!empty($form['date'])) ? $form['date'] : NULL,
     ];
 
     // Создаем подготовленное выражение
-    $stmt = db_get_prepare_stmt($connect, $sql_add_task, $data);
+    if (isset($connect)) {
+        $stmt = db_get_prepare_stmt($connect, $sql_add_task, $data);
+    }
 
     // Выполнение подготовленного запроса
     mysqli_stmt_execute($stmt);
@@ -158,25 +167,27 @@ if (!empty($form) && empty($errors)) {
  */
 
 // Проверим авторизацию на сайте (наличие данных в сессии)
-if ($user_data['user_id']) {
+if (isset($user_data)) {
+    if ($user_data['user_id']) {
 
-    // Данные для шаблона
-    $page_content = include_template('add.php', [
-        'projects'      => $projects,
-        'errors'        => $errors,
-        'project_id'    => $project_id,
-        'form'          => $form,
-    ]);
+        // Данные для шаблона
+        $page_content = include_template('add.php', [
+            'projects' => $projects,
+            'errors' => $errors,
+            'project_id' => $project_id,
+            'form' => $form,
+        ]);
 
-    // Шаблон страницы
-    $layout_content = include_template('layout.php', [
-        'content'   =>  $page_content,
-        'title'     => 'Дела в порядке',
-        'user_data' => $user_data,
-    ]);
+        // Шаблон страницы
+        $layout_content = include_template('layout.php', [
+            'content' => $page_content,
+            'title' => 'Дела в порядке',
+            'user_data' => $user_data,
+        ]);
 
-    print($layout_content);
-} else {
-    // Редирект пользователя на главную для регистрации
-    header('location: index.php');
+        print($layout_content);
+    } else {
+        // Редирект пользователя на главную для регистрации
+        header('location: index.php');
+    }
 }
